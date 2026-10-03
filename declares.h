@@ -1,0 +1,25 @@
+#ifndef DECLARES_H
+#define DECLARES_H
+
+#include <stdint.h>
+#include <stddef.h>
+
+// snippets from
+// https://nullprogram.com/blog/2023/10/08/
+
+// simple helpful macros
+#define countof(a)    (size)(sizeof(a) / sizeof(*(a)))
+#define lengthof(s)   (countof(s) - 1)
+
+// signed types
+typedef uint8_t   u8;
+typedef uint16_t  u16;
+typedef uint32_t  u32;
+typedef uint64_t  u64;
+typedef int32_t   b32;
+typedef int32_t   i32;
+typedef int64_t   i64;
+typedef float     f32;
+typedef double    f64;
+
+#endif
