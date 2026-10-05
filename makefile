@@ -1,2 +1,5 @@
-target:
-	cc pool_alloc.c -o output && ./output
+pool:
+	cc pool_alloc.c -o pool && ./pool
+
+arena:
+	cc arena_alloc.c -o arena && ./arena

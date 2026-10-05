@@ -4,6 +4,9 @@
 #include <string.h>
 #include "declares.h"
 
+// TODO :: pool_alloc
+// TODO :: handles and index-based free and search?
+
 #define pool_default_size 2048
 
 typedef struct region {
