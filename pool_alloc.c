@@ -1,14 +1,14 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include "declares.h"
 
 #define pool_default_size 2048
 
 typedef struct region {
-  u8 * area;
+  u8 area[pool_default_size];
   size_t used;
-  size_t capacity;
   struct region * next;
 } region;
 
@@ -18,24 +18,23 @@ typedef struct {
 } pool;
 
 // allocate a 2kb region
-region * region_create(size_t capacity) {
-
-  if(capacity <= 0) { capacity = pool_default_size; }
-
+region * region_create() {
   region* new_region;
   new_region = malloc(sizeof *new_region);
   if(new_region == NULL) { return NULL; }
     
-  new_region->area = malloc(capacity);
-  new_region->capacity = capacity;
+  memset(new_region->area, 0, pool_default_size); 
   new_region->used = 0;
   new_region->next = NULL;
+
+  return new_region;
 }
 
+// create a pool
 pool pool_init() {
 
   pool newpool = {0};
-  region* new_region = region_create(0);
+  region* new_region = region_create();
   if(new_region == NULL) { return newpool; }
 
   newpool.start = new_region;
@@ -46,33 +45,46 @@ pool pool_init() {
 }
 
 // add page to the pool
-pool* pool_add(pool* p, size_t allocated) {
-  if(p == NULL || allocated == 0) { return NULL; }
-
-  size_t size = pool_default_size;
-  if (allocated > size) {
-    size = allocated;
-  }
-
-  region* new_region = region_create(size);
+pool* pool_add(pool* p) {
+  region* new_region = region_create();
 
   if(new_region == NULL) { return p; }
 
-  // TODO: fix this logic
-  // the pool.end is the tail pointer that points inwards, use that
-  p->start->next = new_region;
-  
+  // the pool.end is the tail pointer that points inwards, then the next
+  p->end->next = new_region;
+  p->end = new_region;
+  p->regions_amount++;
+
   return p;
 }
 
+// adds an item into the pool
+void pool_alloc(pool *p, size_t size) {
+  printf("implementation here");
+}
+
 // free each element in the list
-void pool_free_all(pool p) {
-  // traverse list and free each element
+void pool_clear(pool * p) {  
+  if (p == NULL) { return; }
+
+  region *current = p->start;
+  while (current != NULL) {
+    region *next = current->next;
+    free(current);
+    current = next;
+  }
+
+  p->start = NULL;
+  p->end = NULL;
+  p->regions_amount = 0;
 }
 
 int main() {
   printf("hello\n");
   pool pool_ui = pool_init();
-  printf("pool has %d regions in the linked list", pool_ui.regions_amount + 1);
+  pool_add(&pool_ui);
+  pool_add(&pool_ui);
+  // pool_clear(&pool_ui);
+  printf("pool has %d regions in the linked list", pool_ui.regions_amount);
   return 0;
 }
