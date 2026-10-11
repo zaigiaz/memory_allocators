@@ -1,93 +1,109 @@
 #include <stdio.h>
-#include <stddef.h>
+#include "declares.h"
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include "declares.h"
 
-// TODO :: pool_alloc
-// TODO :: handles and index-based free and search?
+// for testing
+#define pool_default_size 1024
 
-#define pool_default_size 2048
+// size fits inside u16
+#define MAX_SIZE 64000
+#define BITMAP_BYTES ((BITMAP_BITS + 7) / 8)
 
-typedef struct region {
-  u8 area[pool_default_size];
-  size_t used;
-  struct region * next;
-} region;
-
+// memory pool which has area of bytes, stride (size of object), slots (the amount of objects in the pool)
+// and a id to the last used slot, once the (last-used-slot == max_slots) then we refer to the bitmap to find new space
 typedef struct {
-  region *start, *end;
-  u16 regions_amount;
+  u8 * area;
+  u8 * bmap;
+  size_t stride;
+  size_t slots;
 } pool;
 
-// allocate a 2kb region
-region * region_create() {
-  region* new_region;
-  new_region = malloc(sizeof *new_region);
-  if(new_region == NULL) { return NULL; }
-    
-  memset(new_region->area, 0, pool_default_size); 
-  new_region->used = 0;
-  new_region->next = NULL;
+// bitset helpers (safe to ignore for purposes of learning the main logic)
+static bool bit_get(const u8 *bmap, u16 i) { return (bmap[i / 8] & (u8)(1u << (i % 8))) != 0; }
+static void bit_set(u8 *bmap, size_t i) { bmap[i / 8] |= (u8)(1u << (i % 8)); }
+static void bit_clear(u8 *bmap, size_t i) { bmap[i / 8] &= (u8)~(1u << (i % 8)); }
 
-  return new_region;
+
+// find the first free index in bmap
+size_t find_free_index(u8* bmap, u16 slots) {
+  for (u16 i = 0; i < slots; i++) {
+    if (!bit_get(bmap, i)) {
+      return i;
+    }
+  }
+  return slots;
 }
 
 // create a pool
-pool pool_init() {
-
-  pool newpool = {0};
-  region* new_region = region_create();
-  if(new_region == NULL) { return newpool; }
-
-  newpool.start = new_region;
-  newpool.end = new_region;
-  newpool.regions_amount = 1;
-  
-  return newpool;
-}
-
-// add page to the pool
-pool* pool_add(pool* p) {
-  region* new_region = region_create();
-
-  if(new_region == NULL) { return p; }
-
-  // the pool.end is the tail pointer that points inwards, then the next
-  p->end->next = new_region;
-  p->end = new_region;
-  p->regions_amount++;
-
-  return p;
-}
-
-// adds an item into the pool
-void pool_alloc(pool *p, size_t size) {
-  printf("implementation here");
-}
-
-// free each element in the list
-void pool_clear(pool * p) {  
-  if (p == NULL) { return; }
-
-  region *current = p->start;
-  while (current != NULL) {
-    region *next = current->next;
-    free(current);
-    current = next;
+void pool_init(pool* p, size_t stride, size_t slots) {
+  if (stride == 0 || slots <= 1) {
+    fprintf(stderr, "please give correct size for parameters to pool (params > 0)\n");
   }
 
-  p->start = NULL;
-  p->end = NULL;
-  p->regions_amount = 0;
+  if(slots > MAX_SIZE) { fprintf(stderr, "pool size is too big, make it smaller plz"); }
+
+  p->area = malloc((stride*slots));
+  if(p->area == NULL) {
+    free(p->area);
+    fprintf(stderr, "failed to allocate region for pool\n");
+  }
+
+  size_t bmap_bytes = slots / 8 + (slots % 8 != 0);
+  p->bmap = calloc(bmap_bytes, (stride*slots));
+  if(p->bmap == NULL) { 
+    free(p->bmap);
+    fprintf(stderr, "failed to alloc the bitmap in the pool\n");
+ }
+
+  p->stride = stride;
+  p->slots = slots;  
+}
+
+
+// adds an item into the pool
+size_t pool_alloc(pool *p, const void* obj) {
+  u16 free_idx = find_free_index(p->bmap, p->slots);
+
+  if(free_idx >= p->slots) {
+    fprintf(stderr, "pool is full, implement error handling later\n");
+  }
+
+  if(sizeof(obj) != p->stride) {
+    fprintf(stderr, "object is of different type than the pool slot\n");
+  }
+
+  memcpy(p, obj, p->stride);
+  return free_idx;
+}
+
+
+// remove an item from the pool
+void pool_remove(pool *p, u16 idx) {
+  printf("implement here");
+}
+
+
+// clear the entire pool
+void pool_clear(pool * p) {
+
+  // clear the pool and the bitmap
+  memset(p->area, 0, p->stride);
+  memset(p->bmap, 0, sizeof(u8));
+}
+
+
+// frees all the memory in the pool
+void pool_destroy(pool* p) {
+
+  free(p->area);
+  free(p->bmap);
 }
 
 int main() {
-  printf("hello\n");
-  pool pool_ui = pool_init();
-  pool_add(&pool_ui);
-  pool_add(&pool_ui);
-  // pool_clear(&pool_ui);
-  printf("pool has %d regions in the linked list", pool_ui.regions_amount);
+  pool mypool;
+  pool_init(&mypool, sizeof(int), pool_default_size);
+  printf("pool has %zu slots and object size %zu", mypool.slots, mypool.stride);
   return 0;
 }
