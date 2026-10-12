@@ -20,6 +20,12 @@ typedef struct {
   size_t slots;
 } pool;
 
+// object for showcase of api
+typedef struct {
+  char name[10];
+  u8 age;
+} foo_obj;
+
 // bitset helpers (safe to ignore for purposes of learning the main logic)
 static bool bit_get(const u8 *bmap, u16 i) { return (bmap[i / 8] & (u8)(1u << (i % 8))) != 0; }
 static void bit_set(u8 *bmap, size_t i) { bmap[i / 8] |= (u8)(1u << (i % 8)); }
@@ -36,7 +42,7 @@ u16 find_free_index(u8* bmap, u16 slots) {
 }
 
 // create a pool
-void pool_init(pool* p, size_t stride, size_t slots) {
+pool* pool_init(pool* p, size_t stride, size_t slots) {
   if (stride == 0 || slots <= 1) {
     fprintf(stderr, "ERROR: please give correct size for parameters to pool (params > 0)\n");
   }
@@ -127,15 +133,26 @@ int main() {
  
   printf("pool has %zu slots and object size %zu", mypool.slots, mypool.stride);
 
-  // NOTE :: THIS IS COOL!!!! 
-  pool_clear(&mypool);
+  // NOTE :: THIS IS COOL!!!! (only works for u8 data however)
   printf("\nhere is some basic data %u\n", mypool.area[3]);
 
-  int x = 345;
+  // first example with int
+  int x = 1024;
   u16 idx = pool_alloc(&mypool, &x);
   int * data = pool_at(&mypool, idx);
   printf("here is the data from the pool %d", *data);
 
+  // now with foo objects
+  pool foo_pool;
+  pool_init(&foo_pool, sizeof(foo_obj), 20);
+  printf("\nsize of foo object is : %zu", sizeof(foo_obj));
+
+  foo_obj rec1 = { .name="John", .age=12 };
+  u16 rec1_idx = pool_alloc(&foo_pool, &rec1);
+  foo_obj * f_data = pool_at(&foo_pool, rec1_idx);
+  printf("\nhere is foo-object name '%s', and age: %u", f_data->name, f_data->age);
+
   pool_destroy(&mypool);
+  pool_destroy(&foo_pool);
   return 0;
 }
