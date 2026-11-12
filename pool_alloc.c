@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "declares.h"
+#include "types.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,8 +7,8 @@
 // for testing
 #define pool_default_size 1024
 
-// size fits inside u16, in worse case we use 500 bytes for bmap
-// max-size case is 12.5KB for 64,0000 objects where each object is 200 bytes large
+// max-size fits inside u16, in worse case we use 500 bytes for bmap
+// max-size case for entire pool is 12.5KB for 64,0000 objects where each object is 200 bytes large
 #define MAX_SIZE 64000
 
 // memory pool which has area of bytes, stride (size of object), slots (the amount of objects in the pool)
@@ -16,11 +16,11 @@
 typedef struct {
   u8 * area;
   u8 * bmap;
-  size_t stride;
-  size_t slots;
+  u64 stride;
+  u64 slots;
 } pool;
 
-// object for showcase of api
+// example object for showcase
 typedef struct {
   char name[10];
   u8 age;
@@ -45,21 +45,25 @@ u16 find_free_index(u8* bmap, u16 slots) {
 pool* pool_init(pool* p, size_t stride, size_t slots) {
   if (stride == 0 || slots <= 1) {
     fprintf(stderr, "ERROR: please give correct size for parameters to pool (params > 0)\n");
+    return NULL;
   }
 
   if(slots > MAX_SIZE) { fprintf(stderr, "ERROR: pool size is too big, make it smaller plz"); }
 
+  // TODO :: replace with mmap() to avoid malloc use
   p->area = malloc((stride*slots));
   if(p->area == NULL) {
     free(p->area);
     fprintf(stderr, "ERROR: failed to allocate region for pool\n");
+    return NULL;
   }
 
   size_t bmap_bytes = slots / 8 + (slots % 8 != 0);
   p->bmap = calloc(bmap_bytes, 1);
   if(p->bmap == NULL) { 
     free(p->bmap);
-    fprintf(stderr, "ERROR: failed to alloc the bitmap in the pool\n");
+    fprintf(stderr, "ERROR: failed to alloc the bitmap in the pool (could be passed in 0 as param)\n");
+    return NULL;
   }
 
   p->stride = stride;
@@ -73,6 +77,7 @@ u16 pool_alloc(pool *p, const void* obj) {
 
   if(free_idx >= p->slots) {
     fprintf(stderr, "ERROR: pool is full, implement error handling later\n");
+    exit(1);
   }
 
   // take the pool, and get the base + first free slot + slot size and insert
@@ -117,6 +122,9 @@ void pool_destroy(pool* p) {
   p->bmap = NULL;
   p->stride = 0;
   p->slots = 0;
+
+  /* make the pointer a dead pointer now */
+  p = NULL;
 }
 
 // get the item at index
@@ -154,5 +162,4 @@ int main() {
 
   pool_destroy(&mypool);
   pool_destroy(&foo_pool);
-  return 0;
 }
