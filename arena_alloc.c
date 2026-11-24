@@ -2,51 +2,44 @@
 #include <stdlib.h>
 #include "types.h"
 
-#define arena_cap (8*1024*1024) // (8 kilobytes)
+#define arena_cap (4*1024*1024) // (4 MB)
 
 // TODO :: make linked list design so this can grow forevermore
+// TODO :: implement functions, macros, and other things
+// NOTE :: take inspo from to other designs that I have been looking at. (GB, CD, TS)
 
-// the bump allocator is just a region of memory that we can scroll through
-typedef struct {
+typedef struct Region Region;
+struct Region {
   u8 * buffer;
   u64 capacity;
   u64 used;
+  Region * prev;
+};
+
+// the bump allocator is just a region of memory that we can scroll through
+typedef struct {
+  Region * first;
+  u32 region_count;
 } arena;
 
-arena * arena_init(arena * Arena) {
-
-  // set arena to fixed-size block
-  // TODO :: change this to mmap() to avoid malloc use
-  Arena->buffer = malloc(arena_cap);
-  Arena->capacity = 0;
-  Arena->used = 0;
-
-  return Arena;
+void arena_init(arena * Arena) {
+  return 0;
 }
 
-arena * arena_alloc(arena* Arena, size_t obj_size) {
-  if(obj_size > Arena->capacity - Arena->used) {
-    fprintf(stderr, "capacity of array was exceeded in the arena_alloc function");
-    return NULL;
-  }
-
-  // implement alloc stuff here
-  
+rawptr arena_alloc(arena* Arena, sz obj) {
+  return 0;
 }
 
-arena * arena_reset(arena* Arena) {
+void arena_reset(arena* Arena) {
   // dealloc all blocks and chunks and leave empty or something
+  return 0;
 }
 
-arena * realloc(arena* Arena) {
-  // TODO :: implement here
+b32 arena_realloc(arena* Arena) {
+  return 0;
 }
 
 int main() {
   printf("working");
-  arena * thread_buf = arena_init(thread_buf);
+  /* arena * thread_buf = arena_init(thread_buf); */
 }
-
-
-
-

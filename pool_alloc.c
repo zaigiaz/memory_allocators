@@ -4,8 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+// TODO :: alignment? using memset or memcmp functions? definitly needs some improvement
+
 // for testing
-#define pool_default_size 1024
+#define pool_default_size 1024*8 // (8kb base size for operations)
 
 // max-size fits inside u16, in worse case we use 500 bytes for bmap
 // max-size case for entire pool is 12.5KB for 64,0000 objects where each object is 200 bytes large
@@ -24,6 +26,7 @@ typedef struct {
 typedef struct {
   char name[10];
   u8 age;
+  u64 try_again;
 } foo_obj;
 
 // bitset helpers (safe to ignore for purposes of learning the main logic)
@@ -155,10 +158,18 @@ int main() {
   pool_init(&foo_pool, sizeof(foo_obj), 20);
   printf("\nsize of foo object is : %zu", sizeof(foo_obj));
 
-  foo_obj rec1 = { .name="John", .age=12 };
+  foo_obj rec1 = { .name="John", .age=12, .try_again=2400 };
+  foo_obj rec2 = { .name="Samantha", .age=89, .try_again=10000 };
+  foo_obj rec3 = { .name="Timothy", .age=65, .try_again=21 };
+
   u16 rec1_idx = pool_alloc(&foo_pool, &rec1);
-  foo_obj * f_data = pool_at(&foo_pool, rec1_idx);
-  printf("\nhere is foo-object name '%s', and age: %u", f_data->name, f_data->age);
+  u16 rec2_idx = pool_alloc(&foo_pool, &rec2);
+  u16 rec3_idx = pool_alloc(&foo_pool, &rec3);
+  foo_obj * f_data1 = pool_at(&foo_pool, rec1_idx);
+  foo_obj * f_data2 = pool_at(&foo_pool, rec2_idx);
+  foo_obj * f_data3 = pool_at(&foo_pool, rec3_idx);
+  
+  printf("\nhere is foo-object name '%s', and age: %u, try again is %u", f_data3->name, f_data3->age, f_data3->try_again);
 
   pool_destroy(&mypool);
   pool_destroy(&foo_pool);

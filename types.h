@@ -31,6 +31,9 @@ typedef size_t        usize;
 typedef ptrdiff_t     size;
 typedef unsigned char utf8;
 
+typedef u8 b8;
+typedef u32 b32;
+
 // length based-strings
 #define s8(s) (s8){(utf8 *)s, lengthof(s)}
 typedef struct {
